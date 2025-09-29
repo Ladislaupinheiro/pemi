@@ -8,21 +8,21 @@ const CACHE_NAME = 'pemi-cache-v2'; // VERSÃO DO CACHE ATUALIZADA
 
 // Lista completa de URLs a serem cacheadas, com base nos ficheiros do projeto.
 const urlsToCache = [
-    '/',
-    'index.html',
-    'style.css',
-    'manifest.json',
-    'icons/icon-192p.png',
-    'icons/icon-512p.png',
+    './',
+    './index.html',
+    './style.css',
+    './manifest.json',
+    './icons/icon-192p.png',
+    './icons/icon-512p.png',
     // Módulos JavaScript
-    'modules/app.js',
-    'modules/Storage.js',
-    'modules/Shell.js',
-    'modules/BacklogView.js',
-    'modules/MatrixView.js',
-    'modules/RoadmapView.js',
-    'modules/InboxView.js',
-    'modules/AddStoryModal.js'
+    './modules/app.js',
+    './modules/Storage.js',
+    './modules/Shell.js',
+    './modules/BacklogView.js',
+    './modules/MatrixView.js',
+    './modules/RoadmapView.js',
+    './modules/InboxView.js',
+    './modules/AddStoryModal.js'
 ];
 
 // Evento de Instalação: Guarda os ficheiros do App Shell no cache
