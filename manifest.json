@@ -1,8 +1,9 @@
 {
     "name": "pemi",
     "short_name": "pemi",
-    "description": "Uma ferramenta PWA para a gestão ágil de produtos, roadmaps e backlogs.",
-    "start_url": "/",
+    "description": "Uma ferramenta para a gestão ágil de produtos, roadmaps e backlogs.",
+      "start_url": ".",
+    "scope": ".",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#111827",
