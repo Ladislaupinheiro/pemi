@@ -1,10 +1,7 @@
 // modules/RoadmapView.js
-import { Storage } from './Storage.js';
 
-let viewContainer;
-
-async function renderHTML() {
-    const stories = await Storage.getAllStories();
+export function render(container, state) {
+    const { stories } = state;
 
     // Simulação: distribuir histórias pelas colunas
     const nowStories = stories.slice(0, 2);
@@ -53,18 +50,5 @@ async function renderHTML() {
             </div>
         </div>
     `;
-    viewContainer.innerHTML = roadmapHTML;
-}
-
-export async function init(container) {
-    if (container) viewContainer = container;
-    if (!viewContainer) return;
-    
-    await renderHTML();
-    console.log("RoadmapView inicializado.");
-}
-
-export function cleanup() {
-    // Atualmente não há eventos para remover, mas a função está aqui para o futuro.
-    console.log("RoadmapView limpo.");
+    container.innerHTML = roadmapHTML;
 }
