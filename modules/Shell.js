@@ -1,7 +1,5 @@
 // modules/Shell.js
 
-// Este módulo já não precisa de importar o Store, pois recebe o estado como argumento.
-
 export function render(state) {
     const { activeProject, projects } = state;
     const otherProjects = projects.filter(p => p.id !== activeProject?.id);
@@ -22,8 +20,9 @@ export function render(state) {
                     </div>
                 </div>
 
-                <button data-action="show-add-project-modal" class="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700">
-                    <svg class="w-6 h-6 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                <button data-action="show-add-project-modal" class="flex items-center space-x-2 px-3 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                    <span>Novo Projeto</span>
                 </button>
             </header>
 

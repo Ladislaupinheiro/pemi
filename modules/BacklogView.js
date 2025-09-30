@@ -24,7 +24,7 @@ export function render(container, state) {
             ${stories.length === 0 ? `<div class="text-center text-gray-500 mt-8">Nenhuma história no backlog. Adicione uma!</div>` : ''}
         </div>
 
-        <button data-action="show-add-story-modal" class="fixed bottom-20 right-6 bg-blue-600 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:bg-blue-700 transition-colors">
+        <button data-action="show-add-story-modal" class="fixed bottom-20 left-1/2 -translate-x-1/2 bg-blue-600 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:bg-blue-700 transition-colors">
             <svg class="w-8 h-8 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>

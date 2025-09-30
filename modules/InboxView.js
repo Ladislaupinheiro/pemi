@@ -9,7 +9,7 @@ export function render(container, state) {
             
             <form id="add-idea-form" data-action="add-idea" class="mt-4 mb-6 bg-white p-4 rounded-lg shadow">
                 <div class="flex items-center">
-                    <input name="ideaText" type="text" placeholder="Digite uma nova ideia..." required class="flex-grow px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    <input name="ideaText" type="text" placeholder="Digite uma nova ideia..." required class="flex-grow min-w-0 px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                     <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-r-md hover:bg-blue-700">Salvar</button>
                 </div>
             </form>
