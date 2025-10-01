@@ -6,7 +6,6 @@ export function render(container, state) {
     const storiesInQuadrants = {};
     const storiesInPool = [];
 
-    // 1. Separa as histórias entre os quadrantes e a "piscina" (pool)
     stories.forEach(story => {
         if (story.quadrant && story.quadrant !== 'story-pool') {
             if (!storiesInQuadrants[story.quadrant]) {
@@ -18,7 +17,6 @@ export function render(container, state) {
         }
     });
 
-    // 2. Ordena as histórias dentro de cada quadrante pelo seu `orderIndex`
     for (const quadrant in storiesInQuadrants) {
         storiesInQuadrants[quadrant].sort((a, b) => {
             const orderA = a.orderIndex ?? Infinity;
@@ -27,10 +25,9 @@ export function render(container, state) {
         });
     }
 
-    // 3. Renderizador de item único e simplificado
     const renderStoryItem = (story) => `
         <div class="story-item bg-white p-2 rounded shadow cursor-grab" data-id="${story.id}" style="touch-action: none;">
-            <p class="text-sm font-semibold pointer-events-none">${story.quero}</p>
+            <p class="text-sm font-semibold pointer-events-none break-words">${story.quero}</p>
         </div>`;
 
     const matrixHTML = `

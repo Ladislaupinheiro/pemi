@@ -15,7 +15,18 @@ export function render(state) {
                     <div id="project-dropdown" class="hidden absolute left-0 mt-2 w-64 bg-white rounded-lg shadow-xl border">
                         <div class="p-2 text-sm text-gray-500">Trocar para:</div>
                         ${otherProjects.length > 0 ? otherProjects.map(p => `
-                            <button data-action="select-project" data-id="${p.id}" class="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100">${p.name}</button>
+                            <div class="flex items-center justify-between px-2 group hover:bg-gray-100">
+                                <button data-action="select-project" data-id="${p.id}" class="flex-grow text-left px-2 py-2 text-gray-700">${p.name}</button>
+                                <div class="relative">
+                                    <button data-action="toggle-project-menu" data-id="${p.id}" class="p-2 rounded-full hover:bg-gray-200 opacity-0 group-hover:opacity-100">
+                                        <svg class="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg>
+                                    </button>
+                                    <div id="project-menu-${p.id}" class="hidden absolute right-0 -top-1/2 mt-2 w-40 bg-white rounded-md shadow-lg border z-20">
+                                        <button data-action="show-edit-project-modal" data-id="${p.id}" class="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Editar Nome</button>
+                                        <button data-action="show-delete-project-confirmation" data-id="${p.id}" data-name="${p.name}" class="w-full text-left block px-4 py-2 text-sm text-red-600 hover:bg-red-50">Eliminar Projeto</button>
+                                    </div>
+                                </div>
+                            </div>
                         `).join('') : '<div class="px-4 py-2 text-sm text-gray-400">Nenhum outro projeto</div>'}
                     </div>
                 </div>
