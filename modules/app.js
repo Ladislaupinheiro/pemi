@@ -5,26 +5,77 @@ import { render as renderWelcomeView } from './WelcomeView.js';
 import { render as renderAddProjectModal } from './AddProjectModal.js';
 import { render as renderEditProjectModal } from './EditProjectModal.js';
 import { render as renderAddStoryModal } from './AddStoryModal.js';
-import { render as renderEditStoryModal } from './EditStoryModal.js'; // <-- NOVO IMPORT
+import { render as renderEditStoryModal } from './EditStoryModal.js';
 import { render as renderConfirmationModal } from './ConfirmationModal.js';
+// Futuros modais de ideias. As ações para eles já estão a ser preparadas.
+// import { render as renderAddIdeaModal } from './AddIdeaModal.js';
+// import { render as renderEditIdeaModal } from './EditIdeaModal.js';
 
 import { render as renderBacklog } from './BacklogView.js';
 import { render as renderMatrix } from './MatrixView.js';
 import { render as renderRoadmap } from './RoadmapView.js';
-import { render as renderInbox } from './InboxView.js';
 
 const views = {
     'backlog': renderBacklog,
     'matrix': renderMatrix,
-    'roadmap': renderRoadmap,
-    'inbox': renderInbox
+    'roadmap': renderRoadmap
 };
+
 let draggableInstances = [];
 let sortableInstances = [];
+let backlogSwiper = null;
 
 function cleanupInteractivity() {
     if (draggableInstances.length > 0) { draggableInstances.forEach(d => d.kill()); draggableInstances = []; }
     if (sortableInstances.length > 0) { sortableInstances.forEach(s => s.destroy()); sortableInstances = []; }
+    if (backlogSwiper) { backlogSwiper.destroy(true, true); backlogSwiper = null; }
+}
+
+function initBacklogInteractivity() {
+    const fab = document.getElementById('fab-add-button');
+
+    backlogSwiper = new Swiper('.backlog-swiper', {
+        // --- Configuração de "Expert" ---
+        effect: 'coverflow',
+        grabCursor: true,
+        centeredSlides: true,
+        slidesPerView: 'auto',
+        autoHeight: true,
+
+        coverflowEffect: {
+            rotate: 0,
+            stretch: 40, // Espaçamento entre os slides
+            depth: 150,  // Efeito de profundidade
+            modifier: 1,
+            slideShadows: false,
+        },
+
+        pagination: {
+            el: '.swiper-pagination',
+            clickable: true,
+        },
+
+        a11y: { // Módulo de Acessibilidade
+            enabled: true,
+            prevSlideMessage: 'Slide anterior',
+            nextSlideMessage: 'Slide seguinte',
+        },
+        
+        on: {
+            slideChange: function () {
+                const activeIndex = this.activeIndex;
+                if (fab) {
+                    if (activeIndex === 0) { // Slide de Histórias
+                        fab.dataset.action = 'show-add-story-modal';
+                        fab.innerHTML = `<svg class="w-8 h-8 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>`;
+                    } else { // Slide de Ideias
+                        fab.dataset.action = 'show-add-idea-modal';
+                        fab.innerHTML = `<svg class="w-8 h-8 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>`;
+                    }
+                }
+            }
+        }
+    });
 }
 
 function initMatrixInteractivity() {
@@ -55,7 +106,7 @@ function initMatrixInteractivity() {
                 const quadrantId = targetQuadrant.id;
                 const storiesInTarget = Store.state.stories.filter(s => s.quadrant === quadrantId);
                 const newOrderIndex = storiesInTarget.length;
-                await Store.actions.updateStory({ id: storyId, quadrant: quadrantId, orderIndex: newOrderIndex, position: null });
+                await Store.actions.updateStory({ id: storyId, quadrant: quadrantId, orderIndex: newOrderIndex });
             }
         }
     });
@@ -65,11 +116,14 @@ function addGlobalEventListeners() {
     if (document.body.dataset.listenersAttached === 'true') return;
     document.addEventListener('click', async (event) => {
         const actionTarget = event.target.closest('[data-action]');
-        if (!actionTarget) return;
+        if (!actionTarget) {
+            document.querySelectorAll('[id^="project-menu-"], [id^="story-menu-"], [id^="idea-menu-"]').forEach(menu => menu.classList.add('hidden'));
+            return;
+        }
         const action = actionTarget.dataset.action;
 
         if (!action.startsWith('toggle-')) {
-            document.querySelectorAll('[id^="project-menu-"], [id^="story-menu-"]').forEach(menu => menu.classList.add('hidden'));
+            document.querySelectorAll('[id^="project-menu-"], [id^="story-menu-"], [id^="idea-menu-"]').forEach(menu => menu.classList.add('hidden'));
         }
 
         switch (action) {
@@ -85,12 +139,21 @@ function addGlobalEventListeners() {
                 const storyToEdit = Store.state.stories.find(s => s.id === parseInt(actionTarget.dataset.id, 10));
                 if (storyToEdit) Store.actions.showEditStoryModal(storyToEdit);
                 break;
-            case 'delete-idea': await Store.actions.deleteIdea(parseInt(actionTarget.dataset.id, 10)); break;
+            case 'show-add-idea-modal': Store.actions.openModal('addIdea'); break;
+            case 'show-edit-idea-modal':
+                const ideaToEdit = Store.state.ideas.find(i => i.id === parseInt(actionTarget.dataset.id, 10));
+                if (ideaToEdit) Store.actions.showEditIdeaModal(ideaToEdit);
+                break;
+            case 'promote-idea':
+                const ideaToPromote = Store.state.ideas.find(i => i.id === parseInt(actionTarget.dataset.id, 10));
+                if(ideaToPromote) Store.actions.promoteIdea(ideaToPromote);
+                break;
             case 'close-modal': Store.actions.closeModal(); break;
             case 'toggle-project-dropdown': document.getElementById('project-dropdown')?.classList.toggle('hidden'); break;
             case 'hideConfirmation': Store.actions.hideConfirmation(); break;
             case 'confirmDeleteProject': await Store.actions.confirmDeleteProject(); break;
             case 'confirmDeleteStory': await Store.actions.confirmDeleteStory(); break;
+            case 'confirmDeleteIdea': await Store.actions.confirmDeleteIdea(); break;
             case 'toggle-project-menu':
                 const projectMenuId = `project-menu-${actionTarget.dataset.id}`;
                 document.getElementById(projectMenuId)?.classList.toggle('hidden');
@@ -99,14 +162,22 @@ function addGlobalEventListeners() {
                 const storyMenuId = `story-menu-${actionTarget.dataset.id}`;
                 document.getElementById(storyMenuId)?.classList.toggle('hidden');
                 break;
+            case 'toggle-idea-menu':
+                const ideaMenuId = `idea-menu-${actionTarget.dataset.id}`;
+                document.getElementById(ideaMenuId)?.classList.toggle('hidden');
+                break;
             case 'show-delete-project-confirmation':
                 const projectId = parseInt(actionTarget.dataset.id, 10);
                 const projectName = actionTarget.dataset.name;
-                Store.actions.showConfirmation({ message: `Tem a certeza que deseja eliminar o projeto "${projectName}"? Todas as suas histórias e ideias serão perdidas.`, confirmAction: 'confirmDeleteProject', targetId: projectId });
+                Store.actions.showConfirmation({ message: `Tem a certeza que deseja eliminar o projeto "${projectName}"? Todos os seus dados serão perdidos.`, confirmAction: 'confirmDeleteProject', targetId: projectId });
                 break;
             case 'show-delete-story-confirmation':
                 const storyId = parseInt(actionTarget.dataset.id, 10);
-                Store.actions.showConfirmation({ message: `Tem a certeza que deseja eliminar esta user story?`, confirmAction: 'confirmDeleteStory', targetId: storyId });
+                Store.actions.showConfirmation({ message: `Tem a certeza que deseja eliminar esta história?`, confirmAction: 'confirmDeleteStory', targetId: storyId });
+                break;
+            case 'show-delete-idea-confirmation':
+                const ideaId = parseInt(actionTarget.dataset.id, 10);
+                Store.actions.showConfirmation({ message: `Tem a certeza que deseja eliminar esta ideia?`, confirmAction: 'confirmDeleteIdea', targetId: ideaId });
                 break;
         }
     });
@@ -140,6 +211,11 @@ function addGlobalEventListeners() {
                 const ideaText = formData.get('ideaText').trim();
                 if (ideaText) { await Store.actions.addNewIdea({ text: ideaText, createdAt: new Date().toISOString() }); form.reset(); }
                 break;
+            case 'update-idea':
+                const ideaId = parseInt(formData.get('id'), 10);
+                const updatedIdeaText = formData.get('text').trim();
+                if (ideaId && updatedIdeaText) { await Store.actions.updateIdea({ id: ideaId, text: updatedIdeaText }); }
+                break;
         }
     });
 
@@ -149,21 +225,20 @@ function addGlobalEventListeners() {
 function renderApp(state) {
     const appContainer = document.getElementById('app');
     if (!appContainer) return;
-
     cleanupInteractivity();
-
     let baseHTML = '';
     if (state.activeProject) {
         baseHTML = renderShell(state);
     } else {
         baseHTML = renderWelcomeView(state);
     }
-
     let modalHTML = '';
     if (state.activeModal === 'addProject') { modalHTML = renderAddProjectModal(state); } 
     else if (state.activeModal === 'editProject') { modalHTML = renderEditProjectModal(state); } 
     else if (state.activeModal === 'addStory') { modalHTML = renderAddStoryModal(state); } 
     else if (state.activeModal === 'editStory') { modalHTML = renderEditStoryModal(state); }
+    // else if (state.activeModal === 'addIdea') { modalHTML = renderAddIdeaModal(state); } 
+    // else if (state.activeModal === 'editIdea') { modalHTML = renderEditIdeaModal(state); }
     
     let confirmationModalHTML = '';
     if (state.confirmation.isVisible) { confirmationModalHTML = renderConfirmationModal(state); }
@@ -175,6 +250,7 @@ function renderApp(state) {
         const renderCurrentView = views[state.currentView];
         if (renderCurrentView && viewContainer) {
             renderCurrentView(viewContainer, state);
+            if (state.currentView === 'backlog') { initBacklogInteractivity(); }
             if (state.currentView === 'matrix') { initMatrixInteractivity(); }
         }
     }
