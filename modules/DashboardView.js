@@ -10,12 +10,18 @@ export function render(container, state) {
         return 'Boa noite';
     };
 
+    const formatTime = () => {
+        return new Date().toLocaleTimeString('pt-PT', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
     const formatDate = () => {
         return new Date().toLocaleDateString('pt-PT', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
             day: 'numeric',
+            month: 'numeric',
+            year: '2-digit',
         });
     };
 
@@ -23,27 +29,35 @@ export function render(container, state) {
         <div class="p-4 sm:p-6 lg:p-8">
             <div class="max-w-4xl mx-auto">
                 
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-800">${getGreeting()}, ${userProfile.name}!</h1>
-                    <p class="text-gray-500 mt-1">${formatDate()}</p>
+                <div class="dashboard-greeting bg-[#D9D9D9] rounded-xl p-6 text-center mb-8">
+                    <p class="text-xl font-medium text-gray-700">${getGreeting()}, ${userProfile.name}!</p>
+                    <p class="text-7xl font-bold text-gray-800 my-2">${formatTime()}</p>
+                    <p class="text-lg text-gray-600">${formatDate()}</p>
                 </div>
 
-                <div class="mt-8">
-                    <h2 class="text-xl font-semibold text-gray-700 mb-4">Os seus projetos</h2>
+                <div>
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Meus projetos</h2>
                     
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="bg-[#D9D9D9] rounded-xl p-4 space-y-3">
                         ${projects.map(project => `
-                            <button data-action="select-project" data-id="${project.id}" class="bg-white rounded-lg shadow p-4 text-left hover:shadow-lg transition-shadow">
-                                <p class="font-bold text-gray-800 pointer-events-none">${project.name}</p>
-                                <p class="text-sm text-gray-500 mt-2 pointer-events-none">${new Date(project.createdAt).toLocaleDateString()}</p>
+                            <button 
+                                data-action="show-project-summary-modal" 
+                                data-id="${project.id}" 
+                                class="project-card w-full bg-white rounded-lg shadow p-4 flex items-center justify-between text-left hover:shadow-md transition-shadow">
+                                <div>
+                                    <p class="font-semibold text-lg text-gray-800 pointer-events-none">${project.name}</p>
+                                    <p class="text-sm text-gray-500 mt-1 pointer-events-none">${new Date(project.createdAt).toLocaleDateString()}</p>
+                                </div>
+                                <svg class="w-6 h-6 text-blue-500 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                             </button>
                         `).join('')}
+                    </div>
 
-                        <button data-action="show-add-project-modal" class="border-2 border-dashed border-gray-300 rounded-lg p-4 flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:border-blue-500 hover:text-blue-500 transition-colors">
-                            <div class="text-center pointer-events-none">
-                                <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                                <span class="font-semibold">Criar Novo Projeto</span>
-                            </div>
+                    <div class="text-center mt-6">
+                        <button 
+                            data-action="show-add-project-modal" 
+                            class="bg-[#FFCE3B] text-gray-800 font-bold py-2 px-6 rounded-full hover:opacity-90 transition-opacity shadow-sm">
+                            + novo projeto
                         </button>
                     </div>
                 </div>

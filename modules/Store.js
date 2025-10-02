@@ -7,8 +7,9 @@ const state = {
     activeProject: null,
     stories: [],
     ideas: [],
-    currentView: 'dashboard', // <-- MUDADO PARA 'dashboard' COMO VISTA INICIAL
+    currentView: 'dashboard',
     activeModal: null,
+    projectForSummaryModal: null, // <-- NOVO ESTADO
     uiFeedback: { error: null },
     confirmation: {
         isVisible: false,
@@ -28,12 +29,11 @@ const state = {
         id: null,
         text: ''
     },
-    // <-- NOVO ESTADO ADICIONADO -->
     userProfile: {
         name: 'Utilizador',
         role: 'Diretor Criativo',
-        photo: null, // URL da imagem em Base64
-        theme: 'light' // 'light' ou 'dark'
+        photo: null,
+        theme: 'light'
     }
 };
 
@@ -43,12 +43,10 @@ const actions = {
     async initialize() {
         await Storage.initDB();
         
-        // <-- LÓGICA DE CARREGAMENTO DO PERFIL ADICIONADA -->
         let profile = await Storage.getProfile();
         if (profile) {
             state.userProfile = profile;
         } else {
-            // Se não existir perfil, cria um padrão
             await Storage.saveProfile(state.userProfile);
         }
         
@@ -74,22 +72,6 @@ const actions = {
         notify();
     },
 
-    // --- AÇÕES DE PERFIL E TEMA (NOVAS) ---
-    async updateUserProfile(profileData) {
-        // Atualiza apenas as propriedades fornecidas
-        const newProfile = { ...state.userProfile, ...profileData };
-        state.userProfile = newProfile;
-        await Storage.saveProfile(newProfile);
-        notify();
-    },
-
-    async toggleTheme() {
-        const newTheme = state.userProfile.theme === 'light' ? 'dark' : 'light';
-        await this.updateUserProfile({ theme: newTheme });
-        // Lógica para aplicar o tema no DOM será adicionada no app.js
-    },
-
-
     // --- AÇÕES DE PERFIL E TEMA ---
     showEditProfileModal() {
         this.openModal('editProfile');
@@ -99,9 +81,13 @@ const actions = {
         const newProfile = { ...state.userProfile, ...profileData };
         state.userProfile = newProfile;
         await Storage.saveProfile(newProfile);
-        this.closeModal(); // <-- FECHA O MODAL APÓS SALVAR
+        this.closeModal();
     },
 
+    async toggleTheme() {
+        const newTheme = state.userProfile.theme === 'light' ? 'dark' : 'light';
+        await this.updateUserProfile({ theme: newTheme });
+    },
 
     // --- AÇÕES DE PROJETO ---
     async addNewProject(projectData) {
@@ -113,7 +99,7 @@ const actions = {
             return;
         }
         const newProjectId = await Storage.addProject(projectData);
-        await actions.selectProject(newProjectId);
+        await actions.selectProjectAndNavigate({ projectId: newProjectId });
         actions.closeModal();
     },
     
@@ -144,17 +130,22 @@ const actions = {
         this.hideConfirmation();
         if (isDeletingActiveProject) {
             AppState.setActiveProjectId(null);
-            // Navega para o dashboard se o projeto ativo for eliminado
             this.navigateTo('dashboard');
         }
         await this.loadProjectData();
     },
-
+    
+    // <-- AÇÃO REATORIZADA -->
     async selectProject(projectId) {
+        await this.selectProjectAndNavigate({ projectId: projectId, view: 'backlog' });
+    },
+
+    // <-- NOVA AÇÃO DE NAVEGAÇÃO -->
+    async selectProjectAndNavigate({ projectId, view = 'backlog' }) {
         AppState.setActiveProjectId(projectId);
-        // Ao selecionar um projeto, navega para o backlog
-        this.navigateTo('backlog'); 
+        this.navigateTo(view);
         await this.loadProjectData();
+        this.closeModal(); // Fecha o modal de resumo se estiver aberto
     },
 
     navigateTo(viewName) {
@@ -248,8 +239,15 @@ const actions = {
         notify();
     },
 
+    // <-- NOVA AÇÃO -->
+    showProjectSummaryModal(projectId) {
+        state.projectForSummaryModal = projectId;
+        this.openModal('projectSummary');
+    },
+
     closeModal() {
         state.activeModal = null;
+        state.projectForSummaryModal = null; // <-- LIMPEZA ADICIONADA
         state.uiFeedback.error = null;
         state.editingProject = { id: null, currentName: '' };
         state.editingStory = { id: null, data: {} };

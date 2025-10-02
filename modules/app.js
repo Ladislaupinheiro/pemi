@@ -9,15 +9,16 @@ import { render as renderEditStoryModal } from './EditStoryModal.js';
 import { render as renderAddIdeaModal } from './AddIdeaModal.js';
 import { render as renderEditIdeaModal } from './EditIdeaModal.js';
 import { render as renderConfirmationModal } from './ConfirmationModal.js';
-import { render as renderEditProfileModal } from './EditProfileModal.js'; // Importação do novo modal
+import { render as renderEditProfileModal } from './EditProfileModal.js';
+import { render as renderProjectSummaryModal } from './ProjectSummaryModal.js';
 
-import { render as renderDashboard } from './DashboardView.js'; // Importação da nova vista
+import { render as renderDashboard } from './DashboardView.js';
 import { render as renderBacklog } from './BacklogView.js';
 import { render as renderMatrix } from './MatrixView.js';
 import { render as renderRoadmap } from './RoadmapView.js';
 
 const views = {
-    'dashboard': renderDashboard, // Adicionada a nova vista
+    'dashboard': renderDashboard,
     'backlog': renderBacklog,
     'matrix': renderMatrix,
     'roadmap': renderRoadmap
@@ -34,14 +35,12 @@ function cleanupInteractivity() {
 }
 
 function initDashboardInteractivity() {
-    // Animação de entrada para a saudação
     gsap.from('.dashboard-greeting', {
         duration: 0.5,
         opacity: 0,
         y: -20,
         ease: 'power2.out'
     });
-    // Animação stagger para os cards de projeto
     gsap.from('.project-card', {
         duration: 0.5,
         opacity: 0,
@@ -54,29 +53,17 @@ function initDashboardInteractivity() {
 
 function initBacklogInteractivity() {
     const fab = document.getElementById('fab-add-button');
-
     backlogSwiper = new Swiper('.backlog-swiper', {
         slidesPerView: 'auto',
         centeredSlides: true,
         spaceBetween: 16,
         effect: 'coverflow',
-        coverflowEffect: {
-            rotate: 0,
-            stretch: 0,
-            depth: 100,
-            modifier: 2.5,
-            slideShadows: false,
-        },
-        pagination: {
-            el: '.swiper-pagination',
-            clickable: true,
-        },
+        coverflowEffect: { rotate: 0, stretch: 0, depth: 100, modifier: 2.5, slideShadows: false },
+        pagination: { el: '.swiper-pagination', clickable: true },
         on: {
             slideChange: function () {
                 if (fab) {
-                    fab.dataset.action = this.activeIndex === 0 
-                        ? 'show-add-story-modal' 
-                        : 'show-add-idea-modal';
+                    fab.dataset.action = this.activeIndex === 0 ? 'show-add-story-modal' : 'show-add-idea-modal';
                 }
             }
         }
@@ -150,9 +137,12 @@ function addGlobalEventListeners() {
                 const ideaToEdit = Store.state.ideas.find(i => i.id === parseInt(actionTarget.dataset.id, 10));
                 if (ideaToEdit) Store.actions.showEditIdeaModal(ideaToEdit);
                 break;
-            case 'show-edit-profile-modal':
-                Store.actions.showEditProfileModal();
+            case 'show-edit-profile-modal': Store.actions.showEditProfileModal(); break;
+            case 'show-project-summary-modal': {
+                const projectId = parseInt(actionTarget.dataset.id, 10);
+                Store.actions.showProjectSummaryModal(projectId);
                 break;
+            }
             case 'promote-idea':
                 const ideaToPromote = Store.state.ideas.find(i => i.id === parseInt(actionTarget.dataset.id, 10));
                 if(ideaToPromote) Store.actions.promoteIdea(ideaToPromote);
@@ -190,6 +180,12 @@ function addGlobalEventListeners() {
                 const ideaId = parseInt(actionTarget.dataset.id, 10);
                 Store.actions.showConfirmation({ message: `Tem a certeza que deseja eliminar esta ideia?`, confirmAction: 'confirmDeleteIdea', targetId: ideaId });
                 break;
+            case 'navigate-to-project-view': {
+                const projectId = parseInt(actionTarget.dataset.id, 10);
+                const view = actionTarget.dataset.view;
+                await Store.actions.selectProjectAndNavigate({ projectId, view });
+                break;
+            }
         }
     });
 
@@ -231,13 +227,11 @@ function addGlobalEventListeners() {
                 const name = formData.get('name').trim();
                 const role = formData.get('role').trim();
                 const photoFile = form.querySelector('#photo-upload').files[0];
-                
                 const profileData = { name, role };
-
                 if (photoFile) {
                     const reader = new FileReader();
                     reader.onloadend = () => {
-                        profileData.photo = reader.result; // Base64 URL
+                        profileData.photo = reader.result;
                         Store.actions.updateUserProfile(profileData);
                     };
                     reader.readAsDataURL(photoFile);
@@ -278,6 +272,7 @@ function renderApp(state) {
     else if (state.activeModal === 'addIdea') { modalHTML = renderAddIdeaModal(state); } 
     else if (state.activeModal === 'editIdea') { modalHTML = renderEditIdeaModal(state); }
     else if (state.activeModal === 'editProfile') { modalHTML = renderEditProfileModal(state); }
+    else if (state.activeModal === 'projectSummary') { modalHTML = renderProjectSummaryModal(state); }
     
     let confirmationModalHTML = '';
     if (state.confirmation.isVisible) { confirmationModalHTML = renderConfirmationModal(state); }
@@ -288,7 +283,6 @@ function renderApp(state) {
     const renderCurrentView = views[state.currentView];
     if (renderCurrentView && viewContainer) {
         renderCurrentView(viewContainer, state);
-        
         if (state.currentView === 'dashboard') { initDashboardInteractivity(); }
         if (state.currentView === 'backlog') { initBacklogInteractivity(); }
         if (state.currentView === 'matrix') { initMatrixInteractivity(); }
