@@ -20,9 +20,13 @@ const state = {
         id: null,
         currentName: ''
     },
-    editingStory: { // <-- NOVO ESTADO PARA GERIR A EDIÇÃO DE HISTÓRIAS
+    editingStory: {
         id: null,
         data: {}
+    },
+    editingIdea: { // <-- NOVO ESTADO PARA GERIR EDIÇÃO DE IDEIAS
+        id: null,
+        text: ''
     }
 };
 
@@ -53,6 +57,7 @@ const actions = {
         notify();
     },
 
+    // --- AÇÕES DE PROJETO ---
     async addNewProject(projectData) {
         const newProjectNameTrimmed = projectData.name.trim().toLowerCase();
         const isDuplicate = state.projects.some(p => p.name.trim().toLowerCase() === newProjectNameTrimmed);
@@ -62,10 +67,8 @@ const actions = {
             return;
         }
         const newProjectId = await Storage.addProject(projectData);
-        AppState.setActiveProjectId(newProjectId);
-        state.currentView = 'backlog';
+        await actions.selectProject(newProjectId); // Seleciona o novo projeto
         actions.closeModal();
-        await this.loadProjectData();
     },
     
     showEditProjectModal(project) {
@@ -109,9 +112,16 @@ const actions = {
         notify();
     },
 
-    // --- AÇÕES DE CRUD DE HISTÓRIAS ---
+    // --- AÇÕES DE HISTÓRIA (STORY) ---
     async addNewStory(storyData) {
         const projectId = AppState.getActiveProjectId();
+        if(!projectId) return;
+
+        // Se a história veio da promoção de uma ideia, apaga a ideia original
+        if (storyData.promotedFromIdeaId) {
+            await Storage.deleteIdea(storyData.promotedFromIdeaId);
+        }
+
         await Storage.addStory(storyData, projectId);
         actions.closeModal();
         await this.loadProjectData();
@@ -124,9 +134,8 @@ const actions = {
     },
 
     async updateStory(storyData) {
-        // Agora esta ação é mais genérica para lidar com qualquer atualização
         await Storage.updateStory(storyData.id, storyData);
-        this.closeModal(); // Fecha o modal de edição
+        this.closeModal();
         await this.loadProjectData();
     },
 
@@ -148,17 +157,45 @@ const actions = {
         await this.loadProjectData();
     },
 
+    // --- AÇÕES DE IDEIA ---
     async addNewIdea(ideaData) {
         const projectId = AppState.getActiveProjectId();
+        if(!projectId) return;
         await Storage.addIdea(ideaData, projectId);
-        await this.loadProjectData();
-    },
-
-    async deleteIdea(ideaId) {
-        await Storage.deleteIdea(ideaId);
+        this.closeModal();
         await this.loadProjectData();
     },
     
+    promoteIdea(idea) {
+        // Prepara o estado para abrir o modal de 'AddStory' com dados da ideia
+        state.editingStory.data = {
+            quero: idea.text,
+            promotedFromIdeaId: idea.id // Guarda o ID para apagar depois
+        };
+        this.openModal('addStory');
+    },
+
+    showEditIdeaModal(idea) {
+        state.editingIdea.id = idea.id;
+        state.editingIdea.text = idea.text;
+        this.openModal('editIdea');
+    },
+
+    async updateIdea(ideaData) {
+        await Storage.updateIdea(ideaData.id, { text: ideaData.text });
+        this.closeModal();
+        await this.loadProjectData();
+    },
+
+    async confirmDeleteIdea() {
+        const ideaIdToDelete = state.confirmation.targetId;
+        if (!ideaIdToDelete) return;
+        await Storage.deleteIdea(ideaIdToDelete);
+        this.hideConfirmation();
+        await this.loadProjectData();
+    },
+
+    // --- AÇÕES GENÉRICAS DE UI ---
     openModal(modalName) {
         state.activeModal = modalName;
         state.uiFeedback.error = null;
@@ -168,10 +205,9 @@ const actions = {
     closeModal() {
         state.activeModal = null;
         state.uiFeedback.error = null;
-        state.editingProject.id = null;
-        state.editingProject.currentName = '';
-        state.editingStory.id = null; // Limpa o estado de edição de história
-        state.editingStory.data = {};
+        state.editingProject = { id: null, currentName: '' };
+        state.editingStory = { id: null, data: {} };
+        state.editingIdea = { id: null, text: '' };
         notify();
     },
 
@@ -184,10 +220,7 @@ const actions = {
     },
 
     hideConfirmation() {
-        state.confirmation.isVisible = false;
-        state.confirmation.message = '';
-        state.confirmation.confirmAction = null;
-        state.confirmation.targetId = null;
+        state.confirmation = { isVisible: false, message: '', confirmAction: null, targetId: null };
         notify();
     }
 };

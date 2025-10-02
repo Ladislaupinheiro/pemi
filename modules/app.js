@@ -6,10 +6,9 @@ import { render as renderAddProjectModal } from './AddProjectModal.js';
 import { render as renderEditProjectModal } from './EditProjectModal.js';
 import { render as renderAddStoryModal } from './AddStoryModal.js';
 import { render as renderEditStoryModal } from './EditStoryModal.js';
+import { render as renderAddIdeaModal } from './AddIdeaModal.js'; // <-- CORRIGIDO AQUI
+import { render as renderEditIdeaModal } from './EditIdeaModal.js';
 import { render as renderConfirmationModal } from './ConfirmationModal.js';
-// Futuros modais de ideias. As ações para eles já estão a ser preparadas.
-// import { render as renderAddIdeaModal } from './AddIdeaModal.js';
-// import { render as renderEditIdeaModal } from './EditIdeaModal.js';
 
 import { render as renderBacklog } from './BacklogView.js';
 import { render as renderMatrix } from './MatrixView.js';
@@ -35,43 +34,17 @@ function initBacklogInteractivity() {
     const fab = document.getElementById('fab-add-button');
 
     backlogSwiper = new Swiper('.backlog-swiper', {
-        // --- Configuração de "Expert" ---
-        effect: 'coverflow',
-        grabCursor: true,
-        centeredSlides: true,
-        slidesPerView: 'auto',
         autoHeight: true,
-
-        coverflowEffect: {
-            rotate: 0,
-            stretch: 40, // Espaçamento entre os slides
-            depth: 150,  // Efeito de profundidade
-            modifier: 1,
-            slideShadows: false,
-        },
-
         pagination: {
             el: '.swiper-pagination',
             clickable: true,
         },
-
-        a11y: { // Módulo de Acessibilidade
-            enabled: true,
-            prevSlideMessage: 'Slide anterior',
-            nextSlideMessage: 'Slide seguinte',
-        },
-        
         on: {
             slideChange: function () {
-                const activeIndex = this.activeIndex;
                 if (fab) {
-                    if (activeIndex === 0) { // Slide de Histórias
-                        fab.dataset.action = 'show-add-story-modal';
-                        fab.innerHTML = `<svg class="w-8 h-8 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>`;
-                    } else { // Slide de Ideias
-                        fab.dataset.action = 'show-add-idea-modal';
-                        fab.innerHTML = `<svg class="w-8 h-8 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>`;
-                    }
+                    fab.dataset.action = this.activeIndex === 0 
+                        ? 'show-add-story-modal' 
+                        : 'show-add-idea-modal';
                 }
             }
         }
@@ -209,7 +182,7 @@ function addGlobalEventListeners() {
                 break;
             case 'add-idea':
                 const ideaText = formData.get('ideaText').trim();
-                if (ideaText) { await Store.actions.addNewIdea({ text: ideaText, createdAt: new Date().toISOString() }); form.reset(); }
+                if (ideaText) { await Store.actions.addNewIdea({ text: ideaText, createdAt: new Date().toISOString() }); }
                 break;
             case 'update-idea':
                 const ideaId = parseInt(formData.get('id'), 10);
@@ -237,8 +210,8 @@ function renderApp(state) {
     else if (state.activeModal === 'editProject') { modalHTML = renderEditProjectModal(state); } 
     else if (state.activeModal === 'addStory') { modalHTML = renderAddStoryModal(state); } 
     else if (state.activeModal === 'editStory') { modalHTML = renderEditStoryModal(state); }
-    // else if (state.activeModal === 'addIdea') { modalHTML = renderAddIdeaModal(state); } 
-    // else if (state.activeModal === 'editIdea') { modalHTML = renderEditIdeaModal(state); }
+    else if (state.activeModal === 'addIdea') { modalHTML = renderAddIdeaModal(state); } 
+    else if (state.activeModal === 'editIdea') { modalHTML = renderEditIdeaModal(state); }
     
     let confirmationModalHTML = '';
     if (state.confirmation.isVisible) { confirmationModalHTML = renderConfirmationModal(state); }
