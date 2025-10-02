@@ -1,10 +1,11 @@
 // modules/Storage.js
 
 const DB_NAME = 'pemi_DB';
-const DB_VERSION = 4;
+const DB_VERSION = 5; // <-- VERSÃO INCREMENTADA PARA PROVOCAR O onupgradeneeded
 const PROJECT_STORE_NAME = 'projects';
 const STORY_STORE_NAME = 'backlog';
 const INBOX_STORE_NAME = 'inbox';
+const PROFILE_STORE_NAME = 'userProfile'; // <-- NOVA CONSTANTE
 let db;
 
 function initDB() {
@@ -38,6 +39,12 @@ function initDB() {
             if (!inboxStore.indexNames.contains('projectId')) {
                 inboxStore.createIndex('projectId', 'projectId', { unique: false });
             }
+            
+            // <-- LÓGICA ADICIONADA -->
+            if (!dbInstance.objectStoreNames.contains(PROFILE_STORE_NAME)) {
+                // Usamos um 'id' fixo '1' para garantir que há sempre apenas um registo de perfil.
+                dbInstance.createObjectStore(PROFILE_STORE_NAME, { keyPath: 'id' });
+            }
         };
 
         request.onsuccess = (event) => {
@@ -48,6 +55,30 @@ function initDB() {
         request.onerror = (event) => reject(event.target.error);
     });
 }
+
+// --- NOVAS FUNÇÕES DE PERFIL ---
+function saveProfile(profileData) {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([PROFILE_STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(PROFILE_STORE_NAME);
+        // O perfil terá sempre o id '1' para ser uma entrada única.
+        const request = store.put({ ...profileData, id: 1 });
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = (event) => reject(event.target.error);
+    });
+}
+
+function getProfile() {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([PROFILE_STORE_NAME], 'readonly');
+        const store = transaction.objectStore(PROFILE_STORE_NAME);
+        const request = store.get(1); // Pega sempre o perfil com id '1'
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = (event) => reject(event.target.error);
+    });
+}
+// --- FIM DAS NOVAS FUNÇÕES ---
+
 
 function addProject(projectData) {
     return new Promise((resolve, reject) => {
@@ -69,7 +100,6 @@ function getAllProjects() {
     });
 }
 
-// NOVA FUNÇÃO PARA ATUALIZAR UM PROJETO
 function updateProject(projectId, updatedProperties) {
     return new Promise((resolve, reject) => {
         const transaction = db.transaction([PROJECT_STORE_NAME], 'readwrite');
@@ -209,9 +239,11 @@ function deleteIdea(ideaId) {
 
 export const Storage = {
     initDB,
+    saveProfile, // <-- Exportar nova função
+    getProfile,  // <-- Exportar nova função
     addProject,
     getAllProjects,
-    updateProject, // <-- Exportar a nova função
+    updateProject,
     deleteProject,
     addStory,
     getAllStories,

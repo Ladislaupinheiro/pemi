@@ -6,15 +6,18 @@ import { render as renderAddProjectModal } from './AddProjectModal.js';
 import { render as renderEditProjectModal } from './EditProjectModal.js';
 import { render as renderAddStoryModal } from './AddStoryModal.js';
 import { render as renderEditStoryModal } from './EditStoryModal.js';
-import { render as renderAddIdeaModal } from './AddIdeaModal.js'; // <-- CORRIGIDO AQUI
+import { render as renderAddIdeaModal } from './AddIdeaModal.js';
 import { render as renderEditIdeaModal } from './EditIdeaModal.js';
 import { render as renderConfirmationModal } from './ConfirmationModal.js';
+import { render as renderEditProfileModal } from './EditProfileModal.js'; // Importação do novo modal
 
+import { render as renderDashboard } from './DashboardView.js'; // Importação da nova vista
 import { render as renderBacklog } from './BacklogView.js';
 import { render as renderMatrix } from './MatrixView.js';
 import { render as renderRoadmap } from './RoadmapView.js';
 
 const views = {
+    'dashboard': renderDashboard, // Adicionada a nova vista
     'backlog': renderBacklog,
     'matrix': renderMatrix,
     'roadmap': renderRoadmap
@@ -30,11 +33,40 @@ function cleanupInteractivity() {
     if (backlogSwiper) { backlogSwiper.destroy(true, true); backlogSwiper = null; }
 }
 
+function initDashboardInteractivity() {
+    // Animação de entrada para a saudação
+    gsap.from('.dashboard-greeting', {
+        duration: 0.5,
+        opacity: 0,
+        y: -20,
+        ease: 'power2.out'
+    });
+    // Animação stagger para os cards de projeto
+    gsap.from('.project-card', {
+        duration: 0.5,
+        opacity: 0,
+        y: 20,
+        stagger: 0.1,
+        ease: 'power2.out',
+        delay: 0.2
+    });
+}
+
 function initBacklogInteractivity() {
     const fab = document.getElementById('fab-add-button');
 
     backlogSwiper = new Swiper('.backlog-swiper', {
-        autoHeight: true,
+        slidesPerView: 'auto',
+        centeredSlides: true,
+        spaceBetween: 16,
+        effect: 'coverflow',
+        coverflowEffect: {
+            rotate: 0,
+            stretch: 0,
+            depth: 100,
+            modifier: 2.5,
+            slideShadows: false,
+        },
         pagination: {
             el: '.swiper-pagination',
             clickable: true,
@@ -90,13 +122,13 @@ function addGlobalEventListeners() {
     document.addEventListener('click', async (event) => {
         const actionTarget = event.target.closest('[data-action]');
         if (!actionTarget) {
-            document.querySelectorAll('[id^="project-menu-"], [id^="story-menu-"], [id^="idea-menu-"]').forEach(menu => menu.classList.add('hidden'));
+            document.querySelectorAll('[id^="project-menu-"], [id^="story-menu-"], [id^="idea-menu-"], #profile-menu, #project-dropdown').forEach(menu => menu.classList.add('hidden'));
             return;
         }
         const action = actionTarget.dataset.action;
 
         if (!action.startsWith('toggle-')) {
-            document.querySelectorAll('[id^="project-menu-"], [id^="story-menu-"], [id^="idea-menu-"]').forEach(menu => menu.classList.add('hidden'));
+            document.querySelectorAll('[id^="project-menu-"], [id^="story-menu-"], [id^="idea-menu-"], #profile-menu, #project-dropdown').forEach(menu => menu.classList.add('hidden'));
         }
 
         switch (action) {
@@ -104,7 +136,8 @@ function addGlobalEventListeners() {
             case 'select-project': await Store.actions.selectProject(parseInt(actionTarget.dataset.id, 10)); break;
             case 'show-add-project-modal': Store.actions.openModal('addProject'); break;
             case 'show-edit-project-modal':
-                const projectToEdit = Store.state.projects.find(p => p.id === parseInt(actionTarget.dataset.id, 10));
+                const projectToEditId = parseInt(actionTarget.dataset.id, 10);
+                const projectToEdit = Store.state.projects.find(p => p.id === projectToEditId);
                 if (projectToEdit) Store.actions.showEditProjectModal(projectToEdit);
                 break;
             case 'show-add-story-modal': Store.actions.openModal('addStory'); break;
@@ -117,12 +150,17 @@ function addGlobalEventListeners() {
                 const ideaToEdit = Store.state.ideas.find(i => i.id === parseInt(actionTarget.dataset.id, 10));
                 if (ideaToEdit) Store.actions.showEditIdeaModal(ideaToEdit);
                 break;
+            case 'show-edit-profile-modal':
+                Store.actions.showEditProfileModal();
+                break;
             case 'promote-idea':
                 const ideaToPromote = Store.state.ideas.find(i => i.id === parseInt(actionTarget.dataset.id, 10));
                 if(ideaToPromote) Store.actions.promoteIdea(ideaToPromote);
                 break;
             case 'close-modal': Store.actions.closeModal(); break;
             case 'toggle-project-dropdown': document.getElementById('project-dropdown')?.classList.toggle('hidden'); break;
+            case 'toggle-profile-menu': document.getElementById('profile-menu')?.classList.toggle('hidden'); break;
+            case 'toggle-theme': await Store.actions.toggleTheme(); break;
             case 'hideConfirmation': Store.actions.hideConfirmation(); break;
             case 'confirmDeleteProject': await Store.actions.confirmDeleteProject(); break;
             case 'confirmDeleteStory': await Store.actions.confirmDeleteStory(); break;
@@ -189,6 +227,25 @@ function addGlobalEventListeners() {
                 const updatedIdeaText = formData.get('text').trim();
                 if (ideaId && updatedIdeaText) { await Store.actions.updateIdea({ id: ideaId, text: updatedIdeaText }); }
                 break;
+            case 'update-profile': {
+                const name = formData.get('name').trim();
+                const role = formData.get('role').trim();
+                const photoFile = form.querySelector('#photo-upload').files[0];
+                
+                const profileData = { name, role };
+
+                if (photoFile) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        profileData.photo = reader.result; // Base64 URL
+                        Store.actions.updateUserProfile(profileData);
+                    };
+                    reader.readAsDataURL(photoFile);
+                } else {
+                    Store.actions.updateUserProfile(profileData);
+                }
+                break;
+            }
         }
     });
 
@@ -196,15 +253,23 @@ function addGlobalEventListeners() {
 }
 
 function renderApp(state) {
+    if (state.userProfile.theme === 'dark') {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+    
     const appContainer = document.getElementById('app');
     if (!appContainer) return;
     cleanupInteractivity();
+
     let baseHTML = '';
-    if (state.activeProject) {
-        baseHTML = renderShell(state);
-    } else {
+    if (state.projects.length === 0 && !state.activeProject) {
         baseHTML = renderWelcomeView(state);
+    } else {
+        baseHTML = renderShell(state);
     }
+
     let modalHTML = '';
     if (state.activeModal === 'addProject') { modalHTML = renderAddProjectModal(state); } 
     else if (state.activeModal === 'editProject') { modalHTML = renderEditProjectModal(state); } 
@@ -212,20 +277,21 @@ function renderApp(state) {
     else if (state.activeModal === 'editStory') { modalHTML = renderEditStoryModal(state); }
     else if (state.activeModal === 'addIdea') { modalHTML = renderAddIdeaModal(state); } 
     else if (state.activeModal === 'editIdea') { modalHTML = renderEditIdeaModal(state); }
+    else if (state.activeModal === 'editProfile') { modalHTML = renderEditProfileModal(state); }
     
     let confirmationModalHTML = '';
     if (state.confirmation.isVisible) { confirmationModalHTML = renderConfirmationModal(state); }
     
     appContainer.innerHTML = baseHTML + modalHTML + confirmationModalHTML;
-
-    if (state.activeProject) {
-        const viewContainer = document.getElementById('view-container');
-        const renderCurrentView = views[state.currentView];
-        if (renderCurrentView && viewContainer) {
-            renderCurrentView(viewContainer, state);
-            if (state.currentView === 'backlog') { initBacklogInteractivity(); }
-            if (state.currentView === 'matrix') { initMatrixInteractivity(); }
-        }
+    
+    const viewContainer = document.getElementById('view-container');
+    const renderCurrentView = views[state.currentView];
+    if (renderCurrentView && viewContainer) {
+        renderCurrentView(viewContainer, state);
+        
+        if (state.currentView === 'dashboard') { initDashboardInteractivity(); }
+        if (state.currentView === 'backlog') { initBacklogInteractivity(); }
+        if (state.currentView === 'matrix') { initMatrixInteractivity(); }
     }
     
     addGlobalEventListeners();

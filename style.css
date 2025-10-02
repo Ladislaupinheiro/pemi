@@ -1,29 +1,31 @@
-.is-dragging {
-    z-index: 1000;
-    transform: scale(1.05); /* Efeito visual extra para feedback */
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-}
-
+/* --- ESTILOS DE INTERAÇÃO (DRAG & DROP) --- */
 .is-dragging {
     z-index: 1000;
     transform: scale(1.05);
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
     cursor: grabbing;
 }
+
+/* --- ESTILOS GERAIS DA UI --- */
 .swiper-slide {
   height: auto;
 }
+
 .swiper-pagination-bullet-active {
   background-color: #2563eb; /* Azul para combinar com o tema */
 }
+
 .tab-button.active {
   color: #2563eb;
   border-bottom: 2px solid #2563eb;
 }
+
+/* Sinalização da navegação principal */
 .active-nav-link {
     color: #2563eb; /* A cor correspondente a 'text-blue-600' do Tailwind CSS */
 }
-/* --- ESTILOS CORRIGIDOS PARA O BACKLOG HUB (v4.1) --- */
+
+/* --- ESTILOS DO BACKLOG HUB (CARROSSEL) --- */
 
 /* Permite que os slides laterais fiquem visíveis ("peeking") */
 .swiper.backlog-swiper {
@@ -54,13 +56,15 @@
     flex-direction: column;
     overflow: hidden;
 }
+
 .slide-card .card-content {
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
 }
 
-/* --- Barra de Controlo, Paginação e FAB --- */
+/* --- BARRA DE CONTROLO, PAGINAÇÃO E FAB (REFINADO) --- */
 
+/* Contentor invisível, apenas para posicionamento. */
 .control-bar {
     position: fixed;
     bottom: 5.5rem;
@@ -68,14 +72,18 @@
     transform: translateX(-50%);
     display: flex;
     align-items: center;
-    gap: 0.75rem; /* <-- ADICIONADO: O espaçamento entre os indicadores e o FAB */
+    gap: 0.75rem; /* Espaçamento entre a pílula de paginação e o botão FAB */
+    z-index: 30;
+}
+
+/* A "pílula" visual que contém a paginação. */
+.pagination-pills {
     padding: 0.5rem;
-    background-color: rgba(249, 250, 251, 0.8);
+    background-color: rgba(229, 231, 235, 0.8); /* cinza-200 com opacidade */
     -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
     border-radius: 9999px;
     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    z-index: 30;
 }
 
 .control-bar .fab {
@@ -96,7 +104,8 @@
     width: auto;
     display: flex;
     align-items: center;
-    padding-left: 0.75rem; /* Ajuste de padding para equilíbrio visual */
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
 }
 
 .swiper-pagination-bullet {
@@ -112,9 +121,4 @@
 .swiper-pagination-bullet-active {
     width: 28px;
     background-color: #374151;
-}
-
-/* Sinalização da navegação principal */
-.active-nav-link {
-    color: #2563eb;
 }

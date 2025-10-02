@@ -77,7 +77,9 @@ export function render(container, state) {
             </div>
 
             <div class="control-bar">
-                <div class="swiper-pagination"></div>
+                <div class="pagination-pills">
+                    <div class="swiper-pagination"></div>
+                </div>
                 <button id="fab-add-button" data-action="show-add-story-modal" class="fab">
                     <svg class="w-8 h-8 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                 </button>

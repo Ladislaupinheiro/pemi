@@ -7,7 +7,7 @@ const state = {
     activeProject: null,
     stories: [],
     ideas: [],
-    currentView: 'backlog',
+    currentView: 'dashboard', // <-- MUDADO PARA 'dashboard' COMO VISTA INICIAL
     activeModal: null,
     uiFeedback: { error: null },
     confirmation: {
@@ -24,9 +24,16 @@ const state = {
         id: null,
         data: {}
     },
-    editingIdea: { // <-- NOVO ESTADO PARA GERIR EDIÇÃO DE IDEIAS
+    editingIdea: {
         id: null,
         text: ''
+    },
+    // <-- NOVO ESTADO ADICIONADO -->
+    userProfile: {
+        name: 'Utilizador',
+        role: 'Diretor Criativo',
+        photo: null, // URL da imagem em Base64
+        theme: 'light' // 'light' ou 'dark'
     }
 };
 
@@ -35,6 +42,16 @@ let subscribers = [];
 const actions = {
     async initialize() {
         await Storage.initDB();
+        
+        // <-- LÓGICA DE CARREGAMENTO DO PERFIL ADICIONADA -->
+        let profile = await Storage.getProfile();
+        if (profile) {
+            state.userProfile = profile;
+        } else {
+            // Se não existir perfil, cria um padrão
+            await Storage.saveProfile(state.userProfile);
+        }
+        
         await this.loadProjectData();
     },
 
@@ -57,6 +74,35 @@ const actions = {
         notify();
     },
 
+    // --- AÇÕES DE PERFIL E TEMA (NOVAS) ---
+    async updateUserProfile(profileData) {
+        // Atualiza apenas as propriedades fornecidas
+        const newProfile = { ...state.userProfile, ...profileData };
+        state.userProfile = newProfile;
+        await Storage.saveProfile(newProfile);
+        notify();
+    },
+
+    async toggleTheme() {
+        const newTheme = state.userProfile.theme === 'light' ? 'dark' : 'light';
+        await this.updateUserProfile({ theme: newTheme });
+        // Lógica para aplicar o tema no DOM será adicionada no app.js
+    },
+
+
+    // --- AÇÕES DE PERFIL E TEMA ---
+    showEditProfileModal() {
+        this.openModal('editProfile');
+    },
+
+    async updateUserProfile(profileData) {
+        const newProfile = { ...state.userProfile, ...profileData };
+        state.userProfile = newProfile;
+        await Storage.saveProfile(newProfile);
+        this.closeModal(); // <-- FECHA O MODAL APÓS SALVAR
+    },
+
+
     // --- AÇÕES DE PROJETO ---
     async addNewProject(projectData) {
         const newProjectNameTrimmed = projectData.name.trim().toLowerCase();
@@ -67,7 +113,7 @@ const actions = {
             return;
         }
         const newProjectId = await Storage.addProject(projectData);
-        await actions.selectProject(newProjectId); // Seleciona o novo projeto
+        await actions.selectProject(newProjectId);
         actions.closeModal();
     },
     
@@ -98,12 +144,16 @@ const actions = {
         this.hideConfirmation();
         if (isDeletingActiveProject) {
             AppState.setActiveProjectId(null);
+            // Navega para o dashboard se o projeto ativo for eliminado
+            this.navigateTo('dashboard');
         }
         await this.loadProjectData();
     },
 
     async selectProject(projectId) {
         AppState.setActiveProjectId(projectId);
+        // Ao selecionar um projeto, navega para o backlog
+        this.navigateTo('backlog'); 
         await this.loadProjectData();
     },
 
@@ -116,12 +166,9 @@ const actions = {
     async addNewStory(storyData) {
         const projectId = AppState.getActiveProjectId();
         if(!projectId) return;
-
-        // Se a história veio da promoção de uma ideia, apaga a ideia original
         if (storyData.promotedFromIdeaId) {
             await Storage.deleteIdea(storyData.promotedFromIdeaId);
         }
-
         await Storage.addStory(storyData, projectId);
         actions.closeModal();
         await this.loadProjectData();
@@ -167,10 +214,9 @@ const actions = {
     },
     
     promoteIdea(idea) {
-        // Prepara o estado para abrir o modal de 'AddStory' com dados da ideia
         state.editingStory.data = {
             quero: idea.text,
-            promotedFromIdeaId: idea.id // Guarda o ID para apagar depois
+            promotedFromIdeaId: idea.id
         };
         this.openModal('addStory');
     },
